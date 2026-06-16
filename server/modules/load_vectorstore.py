@@ -12,7 +12,8 @@ load_dotenv()
 
 GOOGLE_API_KEY=os.getenv("GOOGLE_API_KEY")
 PINECONE_API_KEY=os.getenv("PINECONE_API_KEY")
-PINECONE_ENV="us-east-1"
+
+PINECONE_ENV="us-east-1" 
 PINECONE_INDEX_NAME="medicalindex"
 
 os.environ["GOOGLE_API_KEY"]=GOOGLE_API_KEY
@@ -44,7 +45,7 @@ index=pc.Index(PINECONE_INDEX_NAME)
 
 def load_vectorstore(uploaded_files):
     embed_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    file_paths = []
+    file_paths = [] #SAVE UPLOADED FILES
 
     for file in uploaded_files:
         save_path = Path(UPLOAD_DIR) / file.filename
