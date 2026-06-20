@@ -1,7 +1,7 @@
 [project]
 name = "medical-assisstant"
 version = "0.1.0"
-description = "Add your description here"
+description = "RAG-powered medical document assistant — upload PDFs and ask questions grounded in your documents using Groq, Google embeddings, and Pinecone."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
