@@ -1,12 +1,5 @@
 from langchain_core.prompts import PromptTemplate
-try:
-    from langchain_community.chains import RetrievalQA
-except Exception:
-    # Fallback for environments where langchain package layout differs
-    try:
-        from langchain.chains import RetrievalQA  # type: ignore[import-not-found]
-    except Exception:
-        from langchain import RetrievalQA
+from langchain_classic.chains import RetrievalQA
 from langchain_groq import ChatGroq
 import os
 from dotenv import load_dotenv
@@ -31,7 +24,7 @@ def get_llm_chain(retriever):
         ---
 
         🔍 **Context**:
-        {context}
+        {context}0
    
         🙋‍♂️ **User Question**:
         {question}

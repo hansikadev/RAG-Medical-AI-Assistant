@@ -7,6 +7,8 @@ python-multipart  # for file uploads
 langchain
 langchain-community
 langchain-core
+langchain-classic
+langchain-text-splitters
 langchain-groq
 
 # Vectorstore

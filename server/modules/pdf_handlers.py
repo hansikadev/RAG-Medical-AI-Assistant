@@ -1,7 +1,6 @@
 import os
 import shutil
 from fastapi import UploadFile
-import tempfile
 
 UPLOAD_DIR="./uploaded_docs"
 

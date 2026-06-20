@@ -1,5 +1,5 @@
 from logger import logger
-
+ 
 def query_chain(chain,user_input:str):
     try:
         logger.debug(f"Running chain for input: {user_input}")

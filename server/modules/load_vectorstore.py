@@ -47,6 +47,7 @@ def load_vectorstore(uploaded_files):
     embed_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     file_paths = [] #SAVE UPLOADED FILES
 
+    #1. save uploaded files
     for file in uploaded_files:
         save_path = Path(UPLOAD_DIR) / file.filename
         with open(save_path, "wb") as f:
@@ -54,19 +55,24 @@ def load_vectorstore(uploaded_files):
         file_paths.append(str(save_path))
 
     for file_path in file_paths:
+        #2. load pdf files
         loader = PyPDFLoader(file_path)
         documents = loader.load()
 
+        #3. split into chunks
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
         chunks = splitter.split_documents(documents)
 
+        #4. embed chunks
         texts = [chunk.page_content for chunk in chunks]
         metadatas = [chunk.metadata for chunk in chunks]
         ids = [f"{Path(file_path).stem}-{i}" for i in range(len(chunks))]
 
-        print(f"🔍 Embedding {len(texts)} chunks...")
-        embeddings = embed_model.embed_documents(texts)
 
+        print(f"🔍 Embedding {len(texts)} chunks...")
+        embeddings = embed_model.embed_documents(texts) #this is the step where text is converted into vector embeddings
+
+        #5. upsert to pinecone
         print("📤 Uploading to Pinecone...")
         with tqdm(total=len(embeddings), desc="Upserting to Pinecone") as progress:
             index.upsert(vectors=zip(ids, embeddings, metadatas))
