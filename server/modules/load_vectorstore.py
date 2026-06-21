@@ -7,7 +7,7 @@ from pinecone import Pinecone, ServerlessSpec
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-
+import traceback
 
 load_dotenv()
 
@@ -87,3 +87,25 @@ def load_vectorstore(uploaded_files):
 
 print("PINECONE_API_KEY =", bool(PINECONE_API_KEY))
 print("GOOGLE_API_KEY =", bool(GOOGLE_API_KEY))
+
+print("Starting vector store initialization...")
+
+try:
+    print("PINECONE_API_KEY exists:", bool(PINECONE_API_KEY))
+    print("GOOGLE_API_KEY exists:", bool(GOOGLE_API_KEY))
+
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+
+    print("Connected to Pinecone")
+
+    spec = ServerlessSpec(cloud="aws", region=PINECONE_ENV)
+
+    existing_indexes = pc.list_indexes()
+
+    print("Indexes:", existing_indexes)
+
+except Exception as e:
+    print("ERROR DURING STARTUP:")
+    print(e)
+    traceback.print_exc()
+    raise
