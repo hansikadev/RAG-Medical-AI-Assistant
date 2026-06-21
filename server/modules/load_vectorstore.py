@@ -26,7 +26,7 @@ os.makedirs(UPLOAD_DIR,exist_ok=True)
 # initialize pinecone instance
 pc=Pinecone(api_key=PINECONE_API_KEY)
 spec=ServerlessSpec(cloud="aws",region=PINECONE_ENV)
-existing_indexes=[i["name"] for i in pc.list_indexes()]
+existing_indexes = pc.list_indexes().names()
 
 
 if PINECONE_INDEX_NAME not in existing_indexes:
@@ -84,3 +84,6 @@ def load_vectorstore(uploaded_files):
             progress.update(len(embeddings))
 
         print(f"✅ Upload complete for {file_path}")
+
+print("PINECONE_API_KEY =", bool(PINECONE_API_KEY))
+print("GOOGLE_API_KEY =", bool(GOOGLE_API_KEY))
