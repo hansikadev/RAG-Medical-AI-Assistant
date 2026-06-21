@@ -6,7 +6,8 @@ from tqdm.auto import tqdm
 from pinecone import Pinecone, ServerlessSpec
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ PINECONE_API_KEY=os.getenv("PINECONE_API_KEY")
 PINECONE_ENV="us-east-1" 
 PINECONE_INDEX_NAME="medicalindex"
 
-os.environ["GOOGLE_API_KEY"]=GOOGLE_API_KEY
+os.environ["GOOGLE_API_KEY"]=GOOGLE_API_KEY 
 
 UPLOAD_DIR="./uploaded_docs"
 os.makedirs(UPLOAD_DIR,exist_ok=True)
@@ -31,8 +32,8 @@ existing_indexes=[i["name"] for i in pc.list_indexes()]
 if PINECONE_INDEX_NAME not in existing_indexes:
     pc.create_index(
         name=PINECONE_INDEX_NAME,
-        dimension=768,
-        metric="dotproduct",
+        dimension=384,
+        metric="cosine",
         spec=spec
     )
     while not pc.describe_index(PINECONE_INDEX_NAME).status["ready"]:
@@ -44,7 +45,7 @@ index=pc.Index(PINECONE_INDEX_NAME)
 # load,split,embed and upsert pdf docs content
 
 def load_vectorstore(uploaded_files):
-    embed_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     file_paths = [] #SAVE UPLOADED FILES
 
     #1. save uploaded files
@@ -65,7 +66,11 @@ def load_vectorstore(uploaded_files):
 
         #4. embed chunks
         texts = [chunk.page_content for chunk in chunks]
-        metadatas = [chunk.metadata for chunk in chunks]
+        metadatas = []
+        for chunk in chunks:
+            metadata = chunk.metadata.copy()
+            metadata["text"] = chunk.page_content
+            metadatas.append(metadata)
         ids = [f"{Path(file_path).stem}-{i}" for i in range(len(chunks))]
 
 
