@@ -1,120 +1,141 @@
 import os
 import time
 from pathlib import Path
+
 from dotenv import load_dotenv
 from tqdm.auto import tqdm
 from pinecone import Pinecone, ServerlessSpec
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-import traceback
 
 load_dotenv()
 
-GOOGLE_API_KEY=os.getenv("GOOGLE_API_KEY")
-PINECONE_API_KEY=os.getenv("PINECONE_API_KEY")
+# Environment Variables
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 
-PINECONE_ENV="us-east-1" 
-PINECONE_INDEX_NAME="medicalindex"
+PINECONE_ENV = "us-east-1"
+PINECONE_INDEX_NAME = "medicalindex"
 
-os.environ["GOOGLE_API_KEY"]=GOOGLE_API_KEY 
+if GOOGLE_API_KEY:
+    os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 
-UPLOAD_DIR="./uploaded_docs"
-os.makedirs(UPLOAD_DIR,exist_ok=True)
-
-print("STEP 1")
-pc = Pinecone(api_key=PINECONE_API_KEY)
-
-print("STEP 2")
-existing_indexes = pc.list_indexes().names()
-
-print("STEP 3")
-index = pc.Index(PINECONE_INDEX_NAME)
-
-print("STEP 4")
-# initialize pinecone instance
-pc=Pinecone(api_key=PINECONE_API_KEY)
-spec=ServerlessSpec(cloud="aws",region=PINECONE_ENV)
-existing_indexes = pc.list_indexes().names()
+# Upload directory
+UPLOAD_DIR = "./uploaded_docs"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-if PINECONE_INDEX_NAME not in existing_indexes:
-    pc.create_index(
-        name=PINECONE_INDEX_NAME,
-        dimension=384,
-        metric="cosine",
-        spec=spec
+def get_pinecone_index():
+    """
+    Connect to Pinecone only when needed.
+    This prevents Render startup issues.
+    """
+
+    if not PINECONE_API_KEY:
+        raise ValueError("PINECONE_API_KEY is missing")
+
+    print("Connecting to Pinecone...")
+
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+
+    spec = ServerlessSpec(
+        cloud="aws",
+        region=PINECONE_ENV
     )
-    while not pc.describe_index(PINECONE_INDEX_NAME).status["ready"]:
-        time.sleep(1)
 
+    existing_indexes = pc.list_indexes().names()
 
-index=pc.Index(PINECONE_INDEX_NAME)
+    print("Existing indexes:", existing_indexes)
 
-# load,split,embed and upsert pdf docs content
+    if PINECONE_INDEX_NAME not in existing_indexes:
+        print("Creating Pinecone index...")
+
+        pc.create_index(
+            name=PINECONE_INDEX_NAME,
+            dimension=384,
+            metric="cosine",
+            spec=spec
+        )
+
+        while not pc.describe_index(PINECONE_INDEX_NAME).status["ready"]:
+            time.sleep(1)
+
+    print("Connected to Pinecone index")
+
+    return pc.Index(PINECONE_INDEX_NAME)
+
 
 def load_vectorstore(uploaded_files):
-    embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    file_paths = [] #SAVE UPLOADED FILES
+    """
+    Load PDFs, split into chunks,
+    generate embeddings, and upload to Pinecone.
+    """
 
-    #1. save uploaded files
+    # Initialize only when upload endpoint is called
+    index = get_pinecone_index()
+
+    embed_model = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+    file_paths = []
+
+    # Save uploaded files
     for file in uploaded_files:
         save_path = Path(UPLOAD_DIR) / file.filename
+
         with open(save_path, "wb") as f:
             f.write(file.file.read())
+
         file_paths.append(str(save_path))
 
+    # Process each PDF
     for file_path in file_paths:
-        #2. load pdf files
+
+        print(f"Processing {file_path}")
+
+        # Load PDF
         loader = PyPDFLoader(file_path)
         documents = loader.load()
 
-        #3. split into chunks
-        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        # Split into chunks
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500,
+            chunk_overlap=50
+        )
+
         chunks = splitter.split_documents(documents)
 
-        #4. embed chunks
         texts = [chunk.page_content for chunk in chunks]
+
         metadatas = []
+
         for chunk in chunks:
             metadata = chunk.metadata.copy()
             metadata["text"] = chunk.page_content
             metadatas.append(metadata)
-        ids = [f"{Path(file_path).stem}-{i}" for i in range(len(chunks))]
 
+        ids = [
+            f"{Path(file_path).stem}-{i}"
+            for i in range(len(chunks))
+        ]
 
-        print(f"🔍 Embedding {len(texts)} chunks...")
-        embeddings = embed_model.embed_documents(texts) #this is the step where text is converted into vector embeddings
+        print(f"Embedding {len(texts)} chunks...")
 
-        #5. upsert to pinecone
-        print("📤 Uploading to Pinecone...")
-        with tqdm(total=len(embeddings), desc="Upserting to Pinecone") as progress:
-            index.upsert(vectors=zip(ids, embeddings, metadatas))
-            progress.update(len(embeddings))
+        embeddings = embed_model.embed_documents(texts)
 
-        print(f"✅ Upload complete for {file_path}")
+        print("Uploading embeddings to Pinecone...")
 
-print("PINECONE_API_KEY =", bool(PINECONE_API_KEY))
-print("GOOGLE_API_KEY =", bool(GOOGLE_API_KEY))
+        vectors = list(zip(ids, embeddings, metadatas))
 
-print("Starting vector store initialization...")
+        with tqdm(
+            total=len(vectors),
+            desc="Upserting to Pinecone"
+        ) as progress:
 
-try:
-    print("PINECONE_API_KEY exists:", bool(PINECONE_API_KEY))
-    print("GOOGLE_API_KEY exists:", bool(GOOGLE_API_KEY))
+            index.upsert(vectors=vectors)
+            progress.update(len(vectors))
 
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-
-    print("Connected to Pinecone")
-
-    spec = ServerlessSpec(cloud="aws", region=PINECONE_ENV)
-
-    existing_indexes = pc.list_indexes()
-
-    print("Indexes:", existing_indexes)
-
-except Exception as e:
-    print("ERROR DURING STARTUP:")
-    print(e)
-    traceback.print_exc()
-    raise
+        print(f"Upload complete for {file_path}")
