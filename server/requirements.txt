@@ -1,30 +1,41 @@
 # Web Framework
-fastapi==0.115.6
-uvicorn[standard]==0.32.1
-python-multipart==0.0.20
+fastapi
+uvicorn[standard]
+python-multipart  # for file uploads
 
 # LangChain & Ecosystem
-langchain==0.3.25
-langchain-community==0.3.24
-langchain-core==0.3.60
-langchain-classic==0.1.0
-langchain-text-splitters==0.3.8
-langchain-groq==0.3.2
+langchain
+langchain-community
+langchain-core
+langchain-classic
+langchain-text-splitters
+langchain-groq
 
 # Vectorstore
-pinecone==6.0.2
+# chromadb
+pinecone
 
 # Embeddings
-langchain-huggingface==0.1.2
-sentence-transformers==3.3.1
+# sentence-transformers
+# langchain-google-generative-ai
+langchain-google-genai
+langchain-huggingface
+sentence-transformers
 
 # PDF Parsing
-pypdf==5.1.0
+PyPDF  # backend for PyPDFLoader via langchain_community
 
 # Environment Variables
-python-dotenv==1.0.1
+python-dotenv
 
 # Typing & Utilities
-pydantic==2.10.4
-requests==2.32.3
-tqdm==4.67.1
+pydantic
+requests
+tqdm
+
+# Logging (optional but recommended)
+loguru
+
+
+
+#  uv pip install -r requirements.txt
