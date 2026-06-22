@@ -4,9 +4,6 @@ from modules.llm import get_llm_chain
 from modules.query_handlers import query_chain
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
-from langchain_huggingface import HuggingFaceEmbeddings
-
-from pinecone import Pinecone
 from pydantic import Field
 from typing import List, Optional
 from logger import logger
@@ -18,6 +15,9 @@ router=APIRouter()
 async def ask_question(question: str = Form(...)):
     try:
         logger.info(f"user query: {question}")
+
+        from langchain_huggingface import HuggingFaceEmbeddings
+        from pinecone import Pinecone
 
         # Embed model + Pinecone setup
         pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
@@ -37,8 +37,8 @@ async def ask_question(question: str = Form(...)):
             tags: Optional[List[str]] = Field(default_factory=list)
             metadata: Optional[dict] = Field(default_factory=dict)
 
-            def __init__(self, documents: List[Document]):
-                super().__init__()
+            def _init_(self, documents: List[Document]):
+                super()._init_()
                 self._docs = documents
 
             def _get_relevant_documents(self, query: str) -> List[Document]:
@@ -53,4 +53,4 @@ async def ask_question(question: str = Form(...)):
 
     except Exception as e:
         logger.exception("Error processing question")
-        return JSONResponse(status_code=500, content={"error": str(e)})    
+        return JSONResponse(status_code=500, content={"error": str(e)})

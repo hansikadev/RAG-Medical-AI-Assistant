@@ -3,12 +3,6 @@ import time
 from pathlib import Path
 
 from dotenv import load_dotenv
-from tqdm.auto import tqdm
-from pinecone import Pinecone, ServerlessSpec
-
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
 
 load_dotenv()
 
@@ -32,6 +26,7 @@ def get_pinecone_index():
     Connect to Pinecone only when needed.
     This prevents Render startup issues.
     """
+    from pinecone import Pinecone, ServerlessSpec
 
     if not PINECONE_API_KEY:
         raise ValueError("PINECONE_API_KEY is missing")
@@ -72,6 +67,11 @@ def load_vectorstore(uploaded_files):
     Load PDFs, split into chunks,
     generate embeddings, and upload to Pinecone.
     """
+    from tqdm.auto import tqdm
+    from pinecone import Pinecone, ServerlessSpec
+    from langchain_community.document_loaders import PyPDFLoader
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_huggingface import HuggingFaceEmbeddings
 
     # Initialize only when upload endpoint is called
     index = get_pinecone_index()
