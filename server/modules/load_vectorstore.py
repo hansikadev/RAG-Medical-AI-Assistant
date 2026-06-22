@@ -22,7 +22,16 @@ os.environ["GOOGLE_API_KEY"]=GOOGLE_API_KEY
 UPLOAD_DIR="./uploaded_docs"
 os.makedirs(UPLOAD_DIR,exist_ok=True)
 
+print("STEP 1")
+pc = Pinecone(api_key=PINECONE_API_KEY)
 
+print("STEP 2")
+existing_indexes = pc.list_indexes().names()
+
+print("STEP 3")
+index = pc.Index(PINECONE_INDEX_NAME)
+
+print("STEP 4")
 # initialize pinecone instance
 pc=Pinecone(api_key=PINECONE_API_KEY)
 spec=ServerlessSpec(cloud="aws",region=PINECONE_ENV)
