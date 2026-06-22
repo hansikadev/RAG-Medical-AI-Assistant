@@ -6,11 +6,11 @@ def main():
     print("Hello from medical-assisstant!")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
 
-if _name_ == "_main_":
+if __name__ == "_main_":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
